@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Clamp Calculator</title>
+<meta name="description" content="Compute a CSS clamp() for fluid typography and spacing from a min and max viewport and size. Correct vw-based linear interpolation, with the math explained. Runs in your browser.">
+<link rel="canonical" href="https://0xelitesystem.github.io/css-clamp-calculator/">
+<meta property="og:title" content="CSS Clamp Calculator">
+<meta property="og:description" content="Compute a CSS clamp() for fluid typography and spacing with correct vw-based linear interpolation.">
+<meta property="og:url" content="https://0xelitesystem.github.io/css-clamp-calculator/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CSS Clamp Calculator","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/css-clamp-calculator/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}
+</script>
+<style>
+:root {
+  --bg: #fafaf6;
+  --surface: #ffffff;
+  --ink: #0a1d1e;
+  --ink-soft: #2c4a4c;
+  --rule: #c8d4d3;
+  --teal: #0f5c60;
+  --teal-deep: #0a4548;
+  --gold: #b07d2a;
+  --gold-deep: #8a611f;
+  --ok: #1a5c2e;
+  --err: #8b1a1a;
+  --code-bg: #f0ebe1;
+  --accent: #2660a8;
+}
+[data-theme="dark"] {
+  --bg: #0c1c1d;
+  --surface: #14292a;
+  --ink: #e8ebe6;
+  --ink-soft: #b0c0bd;
+  --rule: #2a4042;
+  --teal: #4ab4ba;
+  --teal-deep: #6dc8ce;
+  --gold: #d4a155;
+  --gold-deep: #e6b876;
+  --ok: #6dd380;
+  --err: #e88080;
+  --code-bg: #0a1718;
+  --accent: #6da8e0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  line-height: 1.55;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--teal);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; color: var(--teal); }
+.tag {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  color: var(--gold-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .tag { color: var(--gold); }
+.theme-btn {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.theme-btn:hover { border-color: var(--teal); color: var(--teal); }
+.lede { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 1.75rem; max-width: 62ch; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1.25rem;
+  border-radius: 3px;
+}
+.panel-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+.field { margin-bottom: 1rem; }
+.field label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ink-soft); display: block; margin-bottom: 0.4rem;
+}
+.field-inner { position: relative; }
+.field input {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 0.6rem 2.6rem 0.6rem 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+.field input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.unit {
+  position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+  font-family: ui-monospace, monospace; font-size: 0.78rem; color: var(--ink-soft);
+}
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.opts { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; align-items: center; font-size: 0.82rem; color: var(--ink-soft); }
+.opts label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+.opts input[type="text"] {
+  width: 4rem; background: var(--code-bg); border: 1px solid var(--rule); color: var(--ink);
+  padding: 0.3rem 0.4rem; font-family: ui-monospace, monospace; font-size: 0.8rem; border-radius: 2px;
+}
+.output-code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.95rem;
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 2px;
+  word-break: break-all;
+  line-height: 1.5;
+  border-left: 3px solid var(--accent);
+}
+.input-row { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; align-items: center; }
+button {
+  font-family: inherit; font-size: 0.85rem; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+  cursor: pointer; border-radius: 2px;
+}
+button:hover { border-color: var(--teal); }
+button.primary { background: var(--teal); border-color: var(--teal); color: var(--surface); font-weight: 600; }
+[data-theme="dark"] button.primary { color: var(--bg) !important; }
+button.primary:hover { background: var(--teal-deep); border-color: var(--teal-deep); }
+.copy-note { font-size: 0.78rem; color: var(--ok); }
+.err { color: var(--err); font-size: 0.85rem; margin-top: 0.75rem; min-height: 1rem; }
+.math { margin-top: 1.25rem; font-size: 0.88rem; color: var(--ink-soft); }
+.math h3 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink); margin-bottom: 0.5rem; }
+.math code { font-family: ui-monospace, monospace; background: var(--code-bg); padding: 0.1rem 0.3rem; border-radius: 2px; font-size: 0.85rem; }
+.math ol { margin: 0.5rem 0 0 1.2rem; }
+.math li { margin-bottom: 0.4rem; }
+.preview-wrap { margin-top: 1rem; }
+.preview-box {
+  background: var(--code-bg); border: 1px dashed var(--rule); border-radius: 3px;
+  padding: 1rem; overflow: hidden;
+}
+#preview-text { color: var(--ink); font-family: ui-serif, Georgia, serif; margin: 0; }
+.resize-label { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.5rem; font-family: ui-monospace, monospace; }
+.privacy-note { font-size: 0.78rem; color: var(--gold-deep); margin-top: 1rem; }
+[data-theme="dark"] .privacy-note { color: var(--gold); }
+footer {
+  margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+  font-size: 0.78rem; color: var(--ink-soft);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem;
+}
+footer a { color: var(--teal); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  body { padding: 1rem 0.75rem; }
+  h1 { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>CSS Clamp Calculator</h1>
+    <div class="tag">Fluid type and spacing</div>
+  </div>
+  <button class="theme-btn" id="theme-toggle" type="button">Dark</button>
+</header>
+
+<p class="lede">Give a minimum and maximum viewport width, and the size you want at each. This computes a CSS <code>clamp()</code> that scales linearly between them with a <code>vw</code>-based preferred value. All math runs locally in your browser.</p>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel-title">Inputs</div>
+    <div class="two">
+      <div class="field">
+        <label for="minvw">Min viewport</label>
+        <div class="field-inner"><input type="text" id="minvw" inputmode="decimal" value="320"><span class="unit">px</span></div>
+      </div>
+      <div class="field">
+        <label for="maxvw">Max viewport</label>
+        <div class="field-inner"><input type="text" id="maxvw" inputmode="decimal" value="1280"><span class="unit">px</span></div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="minsize">Min size</label>
+        <div class="field-inner"><input type="text" id="minsize" inputmode="decimal" value="16"><span class="unit">px</span></div>
+      </div>
+      <div class="field">
+        <label for="maxsize">Max size</label>
+        <div class="field-inner"><input type="text" id="maxsize" inputmode="decimal" value="24"><span class="unit">px</span></div>
+      </div>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="use-rem" checked> Output in rem</label>
+      <label>Root font size <input type="text" id="root-px" inputmode="decimal" value="16"> px</label>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="privacy-note">Nothing is uploaded. This tool makes no network calls.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Result</div>
+    <div class="output-code" id="output">clamp(...)</div>
+    <div class="input-row">
+      <button class="primary" id="copy-btn" type="button">Copy</button>
+      <span class="copy-note" id="copy-note"></span>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-box"><p id="preview-text">The quick brown fox jumps over the lazy dog.</p></div>
+      <div class="resize-label" id="resize-label"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="math">
+    <h3>The math</h3>
+    <p id="math-summary"></p>
+    <ol>
+      <li>Slope is the change in size over the change in viewport: <code id="m-slope"></code>. This is unitless px per px.</li>
+      <li>As a percentage of the viewport that is the <code>vw</code> part: <code id="m-vw"></code>.</li>
+      <li>The intercept is the size the line would have at a viewport of 0: <code id="m-intercept"></code>. That is the fixed <code id="m-rem"></code> part.</li>
+      <li>Preferred value is <code>intercept + slope * viewport</code>, written as <code id="m-pref"></code>.</li>
+      <li><code>clamp()</code> then holds the result between the min and max so it never goes below <code id="m-min"></code> or above <code id="m-max"></code>.</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  <div>CSS Clamp Calculator. Open source, MIT licensed. <a href="https://github.com/0xelitesystem/css-clamp-calculator" target="_blank" rel="noopener">View source</a>.</div>
+  <div>Real linear interpolation, runs offline.</div>
+</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Theme
+const themeBtn = $("theme-toggle");
+function setTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "Light" : "Dark";
+}
+themeBtn.addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  setTheme(cur === "dark" ? "light" : "dark");
+});
+
+function round(v, d) { const f = Math.pow(10, d); return Math.round(v * f) / f; }
+function num(id) { return parseFloat($(id).value); }
+
+function compute() {
+  const err = $("err");
+  const minVw = num("minvw"), maxVw = num("maxvw");
+  const minSize = num("minsize"), maxSize = num("maxsize");
+  const useRem = $("use-rem").checked;
+  const root = num("root-px");
+
+  for (const [id, v] of [["min viewport", minVw], ["max viewport", maxVw], ["min size", minSize], ["max size", maxSize]]) {
+    if (isNaN(v)) { err.textContent = "Enter a number for " + id + "."; return; }
+  }
+  if (useRem && (isNaN(root) || root <= 0)) { err.textContent = "Root font size must be a positive number."; return; }
+  if (minVw === maxVw) { err.textContent = "Min and max viewport must differ, otherwise the slope is undefined."; return; }
+  if (minVw > maxVw) { err.textContent = "Min viewport should be smaller than max viewport."; return; }
+  err.textContent = "";
+
+  // Linear interpolation: size = intercept + slope * viewport (all in px).
+  const slope = (maxSize - minSize) / (maxVw - minVw);       // px per px
+  const interceptPx = minSize - slope * minVw;               // px at viewport 0
+  const vw = round(slope * 100, 4);                          // vw coefficient
+
+  // Convert fixed parts to chosen unit
+  const unit = useRem ? "rem" : "px";
+  const conv = useRem ? (px) => round(px / root, 4) : (px) => round(px, 4);
+
+  const interceptOut = conv(interceptPx);
+  const minOut = conv(minSize);
+  const maxOut = conv(maxSize);
+
+  // Preferred term: intercept + vw*viewport. Order min/max correctly for clamp.
+  const lowSize = Math.min(minSize, maxSize);
+  const highSize = Math.max(minSize, maxSize);
+  const lowOut = conv(lowSize);
+  const highOut = conv(highSize);
+
+  const prefStr = interceptOut + unit + " + " + vw + "vw";
+  const clampStr = "clamp(" + lowOut + unit + ", " + prefStr + ", " + highOut + unit + ")";
+
+  $("output").textContent = clampStr;
+
+  // Math explanation
+  $("m-slope").textContent = "(" + maxSize + " - " + minSize + ") / (" + maxVw + " - " + minVw + ") = " + round(slope, 5);
+  $("m-vw").textContent = round(slope, 5) + " * 100 = " + vw + "vw";
+  $("m-intercept").textContent = minSize + " - " + round(slope, 5) + " * " + minVw + " = " + round(interceptPx, 4) + "px = " + interceptOut + unit;
+  $("m-rem").textContent = interceptOut + unit;
+  $("m-pref").textContent = prefStr;
+  $("m-min").textContent = lowOut + unit;
+  $("m-max").textContent = highOut + unit;
+  $("math-summary").textContent =
+    "The size grows in a straight line from " + minSize + "px at a " + minVw + "px viewport to " +
+    maxSize + "px at a " + maxVw + "px viewport. clamp() takes a floor, a preferred value, and a ceiling.";
+
+  // Live preview
+  $("preview-text").style.fontSize = clampStr;
+  updateResizeLabel();
+}
+
+function updateResizeLabel() {
+  const box = $("preview-text");
+  const px = Math.round(parseFloat(getComputedStyle(box).fontSize));
+  $("resize-label").textContent = "Rendered size at this window width: " + px + "px. Resize the window to see it change.";
+}
+
+$("copy-btn").addEventListener("click", async () => {
+  const text = $("output").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    flashCopy("Copied");
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); flashCopy("Copied"); }
+    catch (e2) { flashCopy("Copy failed, select manually"); }
+    document.body.removeChild(ta);
+  }
+});
+function flashCopy(msg) {
+  const n = $("copy-note"); n.textContent = msg;
+  setTimeout(() => { n.textContent = ""; }, 1600);
+}
+
+["minvw", "maxvw", "minsize", "maxsize", "root-px"].forEach((id) => $(id).addEventListener("input", compute));
+$("use-rem").addEventListener("change", compute);
+window.addEventListener("resize", updateResizeLabel);
+
+// Init
+const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+setTheme(prefersDark ? "dark" : "light");
+compute();
+</script>
+</body>
+</html>
